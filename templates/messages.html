@@ -3,8 +3,29 @@
   <title>Avida-ED Diagnostics</title>
 </head>
 <body>
-  <div id='filter'></div>
   <div id='messages'></div>
-  <div id='commands'></div>
-</body>
+  <script src="//cdn.socket.io/socket.io-1.4.5.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/dojo/1.10.4/dojo/dojo.js"
+            data-dojo-config="async: true"></script>
+    <script>
+        require([
+            'dojo/dom',
+            'dojo/dom-construct',
+        ], function (dom, domConstruct) {
+            var msg_div = dom.byId('messages');
+            ws_diag = new io.connect('http://localhost:5000/messages');
+            ws_diag.on('ui_msg', function(e){
+              domConstruct.place('<div style="color:#0000FF">'+JSON.stringify(e)+'</div>', msg_div);
+            });
+            ws_diag.on('av_msg', function(e){
+              domConstruct.place('<div style="color:#FF0000">'+JSON.stringify(e)+'</div>', msg_div);
+            });
+            ws_diag.on('connect', function(e){
+              domConstruct.place('<div>Connected</div>', msg_div);
+            });
+            ws_diag.on('disconnect', function(e){
+              domConstruct.place('<div>Disconnected</div>', msg_div);
+            });
+          });
+    </script></body>
 </html>
