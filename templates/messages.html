@@ -1,9 +1,56 @@
 <html>
 <head>
   <title>Avida-ED Diagnostics</title>
+  <style>
+
+    .div_msg_root {
+      width:100%;
+      padding: 5px;
+      overflow:hidden;
+    }
+
+    .div_msg_num {
+      float:left;
+      width:20%;
+      margin-right:5px;
+      text-align: right;
+    }
+
+
+    .div_msg_msg {
+      overflow:hidden;
+      border:solid;
+    }
+
+    .div_msg_header {
+      font-weight:bold;
+    }
+
+    .div_msg_data {
+      word-break: break-all;
+      margin: auto;
+      padding: 5px;
+      padding-bottom: 10px;
+    }
+
+    .div_av_msg {
+      color: green;
+    }
+
+    .div_ui_msg {
+      color: blue;
+    }
+
+    .div_stat_msg{
+      color: gray;
+    }
+
+  </style>
+
 </head>
 <body>
-  <div id='messages'></div>
+  <div id='control' width='20%'></div>
+  <div id='messages' width="80%"></div>
   <script src="//cdn.socket.io/socket.io-1.4.5.js"></script>
   <script src="//ajax.googleapis.com/ajax/libs/dojo/1.10.4/dojo/dojo.js"
             data-dojo-config="async: true"></script>
@@ -11,20 +58,60 @@
         require([
             'dojo/dom',
             'dojo/dom-construct',
-        ], function (dom, domConstruct) {
-            var msg_div = dom.byId('messages');
+            'dojo/dom-attr',
+            'dojo/dom-class',
+            'dojo/dom-style'
+        ], function (dom, domConstruct, domAttr, domClass, domStyle) {
+
+           function appendMsg(node)
+           {
+             var msg_div = dom.byId('messages');
+             domConstruct.place(node, msg_div);
+           }
+
+           function createMsgElement(src, msg)
+           {
+              var ndx = (msg['_ndx'] != undefined) ? JSON.stringify(msg['_ndx']) : '-';
+              var msg_type = (msg.type != undefined) ? msg.type : "Unknown";
+              var msg_name = (msg.name != undefined) ? msg.name : "";
+              var div_msg_class = 'div_'+src;
+
+              if (msg_type == 'userFeedback'){
+                msg_name = msg.level;
+              }
+
+              var root_div = domConstruct.create('div', {class:'div_msg_root ' + div_msg_class});
+              var num_div = domConstruct.create('div', {class:'div_msg_num'}, root_div);
+              num_div.textContent = '[' + ndx + ']';
+
+              var msg_div = domConstruct.create('div', {class:'div_msg_msg', onclick:'alert("'+ndx+'");'}, root_div);
+
+              var msg_header = domConstruct.create('div', {class:'div_msg_header'}, msg_div);
+              msg_header.textContent = msg_type + ' : ' + msg_name;
+
+              var msg_data = domConstruct.create('div', {class:'div_msg_data'}, msg_div);
+              msg_data.textContent = ""; //JSON.stringify(msg);
+              return root_div;
+           }
+
+           function createAndAppendMsg(src, msg)
+           {
+             appendMsg(createMsgElement(src,msg));
+           }
+
+
             ws_diag = new io.connect('http://localhost:5000/messages');
             ws_diag.on('ui_msg', function(e){
-              domConstruct.place('<div style="color:#0000FF">'+JSON.stringify(e)+'</div>', msg_div);
+              createAndAppendMsg('ui_msg', e);
             });
             ws_diag.on('av_msg', function(e){
-              domConstruct.place('<div style="color:#FF0000">'+JSON.stringify(e)+'</div>', msg_div);
+              createAndAppendMsg('av_msg', e)
             });
             ws_diag.on('connect', function(e){
-              domConstruct.place('<div>Connected</div>', msg_div);
+              createAndAppendMsg('stat_msg', {type:'internal', name:'Connected'});
             });
             ws_diag.on('disconnect', function(e){
-              domConstruct.place('<div>Disconnected</div>', msg_div);
+              createAndAppendMsg('stat_msg', {type:'internal', name:'Disconnected'});
             });
           });
     </script></body>
