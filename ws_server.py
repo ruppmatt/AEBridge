@@ -2,6 +2,8 @@ from flask import Flask, render_template, request
 from flask_socketio import SocketIO, emit, Namespace
 import json
 import redis
+import pickle
+import zlib
 
 
 app = Flask(__name__)
@@ -11,19 +13,31 @@ avida_socket = None
 messages_socket = None
 console_socket = None
 
-r_server = redis.Redis('localhost');
+r_server = redis.StrictRedis('localhost');
 r_server.set('_ndx', -1);
 
+def MakeKey(ndx):
+    return 'msg::' + str(ndx)
 
-def BuildMessage(j):
+
+def ProcessMessage(j):
     global r_server
     msg = StripMessage(j)
-    msg['_ndx'] = r_server.incr('_ndx')
+    ndx = r_server.incr('_ndx')
+    msg['_ndx'] = ndx
+    compressed = zlib.compress(pickle.dumps(j),9)
+    r_server.set(MakeKey(ndx), compressed)
     return msg
 
 
+def GetMessage(ndx):
+    return pickle.loads(zlib.decompress(r_server.get(MakeKey(ndx))))
+
+
+
 def StripMessage(j):
-    rv = {k:j[k] for k in ['type','name','level'] if k in j}
+    rv = {k:j[k] for k in ['type','name','level','_update'] if k in j}
+
     if rv['type'] == 'response':
         if 'name' not in j['request']:
             rv['name'] = '(' + j['request']['type'] + ')'
@@ -51,30 +65,37 @@ class AvidaClient(Namespace):
     def on_ui_msg(self, msg):
         global messages_socket
         if messages_socket:
-            emit('ui_msg', BuildMessage(msg), namespace='/messages', room=messages_socket);
+            emit('ui_msg', ProcessMessage(msg), namespace='/messages', room=messages_socket);
 
     def on_av_msg(self, msg):
         global messages_socket
         if messages_socket:
-            emit('av_msg', BuildMessage(msg), namespace='/messages', room=messages_socket);
+            emit('av_msg', ProcessMessage(msg), namespace='/messages', room=messages_socket);
 
 
 class MessagesClient(Namespace):
-    def on_connect(msg):
+    def on_connect(self):
         global messages_socket
+        global r_server
         messages_socket = request.sid
         print('Message client connected:', messages_socket)
+        db_ndx = r_server.get('_ndx')
+        emit('db_ndx', db_ndx)
 
-    def on_disconnect(msg):
+    def on_disconnect(self):
         global messages_socket
         print('Message client disconnected:', messages_socket)
         messages_socket = None
 
-    def on_send_command(msg):
+    def on_send_command(self,msg):
         global avida_socket
         if avida_socket:
             emit('command', msg, namespace='/avida', room=avida_socket)
 
+    def on_db_request(self, msg):
+        db_msg = GetMessage(msg['ndx'])
+        if db_msg != None:
+            emit('db_request', {'ndx':msg['ndx'], 'data':db_msg})
 
 
 socketio.on_namespace(AvidaClient('/avida'))
