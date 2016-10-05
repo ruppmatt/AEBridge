@@ -1,174 +1,204 @@
 <html>
+
 <head>
-  <title>Avida-ED Diagnostics</title>
-  <style>
+   <title>Avida-ED Diagnostics</title>
+   <link rel='stylesheet' type='text/css' href='libs/jquery.jsonview.css'>
+   <style>
+      .div_msg_root {
+         width: 100%;
+         padding: 5px;
+         overflow: hidden;
+      }
 
-  .div_msg_root {
-    width:100%;
-    padding: 5px;
-    overflow:hidden;
-  }
+      .div_msg_num {
+         float: left;
+         width: 15%;
+         margin-right: 5px;
+         text-align: right;
+         font-size: small;
+      }
 
-  .div_msg_num {
-    float:left;
-    width:15%;
-    margin-right:5px;
-    text-align: right;
-    font-size: small;
-  }
+      .div_msg_msg {
+         overflow: hidden;
+         border: solid;
+      }
 
-  .div_msg_msg {
-    overflow:hidden;
-    border:solid;
-  }
+      .div_msg_header {
+         font-weight: bold;
+         padding: 5px;
+      }
 
-  .div_msg_header {
-    font-weight:bold;
-    padding-left:5px;
-  }
+      .div_msg_data {
+         word-break: break-all;
+         margin: auto;
+         padding: 10px;
+         padding-bottom: 10px;
+      }
 
-  .div_msg_data {
-    word-break: break-all;
-    margin: auto;
-    padding: 10px;
-    padding-bottom: 10px;
-  }
+      .div_av_msg {
+         color: green;
+      }
 
-  .div_av_msg {
-    color: green;
-  }
+      .div_ui_msg {
+         color: blue;
+      }
 
-  .div_ui_msg {
-    color: blue;
-  }
-
-  .div_stat_msg{
-    color: gray;
-  }
-
-  </style>
+      .div_stat_msg {
+         color: gray;
+      }
+   </style>
 
 </head>
+
 <body>
-  <div id='control' width='20%'></div>
-  <div id='messages' width="80%"></div>
-  <script src="//cdn.socket.io/socket.io-1.4.5.js"></script>
-  <script src="//ajax.googleapis.com/ajax/libs/dojo/1.10.4/dojo/dojo.js"
-  data-dojo-config="async: true"></script>
-  <script>
-  require([
-    'dojo/dom',
-    'dojo/dom-construct',
-    'dojo/dom-attr',
-    'dojo/dom-class',
-    'dojo/dom-style',
-    'dojo/_base/lang',
-    'dojo/on'
-  ], function (dom, domConstruct, domAttr, domClass, domStyle, lang, on) {
+   <div id='control' width='20%'></div>
+   <div id='messages' width="80%"></div>
+   <script src="//cdn.socket.io/socket.io-1.4.5.js"></script>
+   <script src="//ajax.googleapis.com/ajax/libs/dojo/1.10.4/dojo/dojo.js" data-dojo-config="
+  async:true,
+  packages:[
+    {name:'jquery', location:'/libs', main:'jquery-3.1.1.min'}
+  ]
+  "></script>
+   <script>
+      require([
+         'dojo/dom',
+         'dojo/dom-construct',
+         'dojo/dom-attr',
+         'dojo/dom-class',
+         'dojo/dom-style',
+         'dojo/_base/lang',
+         'dojo/on',
+         'dojo/query',
+         'jquery'
+      ], function(dom, domConstruct, domAttr, domClass, domStyle, lang, on, query, jQuery) {
+         var $ = jQuery;
+         $.getScript('/libs/jquery.jsonview.js');
+         var db_ndx = -1;
 
-    var db_ndx = -1;
+         function toggleMsgByNdx(ndx) {
+            if (ndx != '-') {
+               var existing_data = dom.byId('div_data_ndx_' + ndx);
+               if (existing_data != undefined) {
+                  domConstruct.destroy(existing_data);
+               } else {
+                  ws_diag.emit('db_request', {
+                     ndx: ndx
+                  });
+               }
+            }
+         }
 
-    function toggleMsgByNdx(ndx)
-    {
-      if (ndx != '-'){
-        var existing_data = dom.byId('div_data_ndx_'+ndx);
-        if (existing_data != undefined){
-          domConstruct.destroy(existing_data);
-        } else {
-          ws_diag.emit('db_request', {ndx:ndx});
-        }
-      }
-    }
+         function appendMsg(node) {
+            var msg_div = dom.byId('messages');
+            domConstruct.place(node, msg_div);
+            query('.div_msg_header', node).forEach(function(n) {
+               var s = domStyle.getComputedStyle(n);
+               domStyle.set(n, 'background-color', s.color);
+               domStyle.set(n, 'color', 'white');
+            });
+         }
 
-    function appendMsg(node)
-    {
-      var msg_div = dom.byId('messages');
-      domConstruct.place(node, msg_div);
-    }
+         function createMsgElement(src, msg) {
+            var ndx = (msg['_ndx'] != undefined) ? JSON.stringify(msg['_ndx']) : '-';
+            var msg_type = (msg.type != undefined) ? msg.type : "Unknown";
+            var msg_name = (msg.name != undefined) ? msg.name : "";
+            var div_msg_class = 'div_' + src;
 
+            if (msg_type == 'userFeedback') {
+               msg_name = msg.level;
+            }
 
-    function my_alert(arg)
-    {
-      alert(arg);
-    }
+            var root_div = domConstruct.create('div', {
+               class: 'div_msg_root ' + div_msg_class
+            });
+            var num_div = domConstruct.create('div', {
+               class: 'div_msg_num'
+            }, root_div);
+            num_div.textContent = '[' + ndx +
+               ((msg['_update'] != undefined) ? ' @ ' + msg['_update'] : '') + ']';
 
-    function createMsgElement(src, msg)
-    {
-      var ndx = (msg['_ndx'] != undefined) ? JSON.stringify(msg['_ndx']) : '-';
-      var msg_type = (msg.type != undefined) ? msg.type : "Unknown";
-      var msg_name = (msg.name != undefined) ? msg.name : "";
-      var div_msg_class = 'div_'+src;
+            var msg_div = domConstruct.create('div', {
+               id: 'ndx_' + ndx,
+               class: 'div_msg_msg'
+            }, root_div);
+            var msg_header = domConstruct.create('div', {
+               class: 'div_msg_header'
+            }, msg_div);
+            msg_header.textContent = msg_type + ' : ' + msg_name;
 
-      if (msg_type == 'userFeedback'){
-        msg_name = msg.level;
-      }
+            if (ndx != '-') {
+               var _this = this;
+               var f = lang.hitch(_this, toggleMsgByNdx, ndx);
+               on(msg_header, 'click', f);
+            }
 
-      var root_div = domConstruct.create('div', {class:'div_msg_root ' + div_msg_class});
-      var num_div = domConstruct.create('div', {class:'div_msg_num'}, root_div);
-      console.log(msg['_update']);
-      num_div.textContent = '[' + ndx +
-      ((msg['_update'] != undefined) ? ' @ ' + msg['_update'] : '' ) +  ']';
-
-      var msg_div = domConstruct.create('div', {id:'ndx_'+ndx, class:'div_msg_msg'}, root_div);
-      var msg_header = domConstruct.create('div', {class:'div_msg_header'}, msg_div);
-      msg_header.textContent = msg_type + ' : ' + msg_name;
-
-      if (ndx != '-'){
-        var _this = this;
-        var f = lang.hitch(_this, toggleMsgByNdx, ndx);
-        on(msg_header, 'click', f);
-      }
-
-      return root_div;
-    }
-
-
-    function createAndAppendMsg(src, msg)
-    {
-      appendMsg(createMsgElement(src,msg));
-    }
+            return root_div;
+         }
 
 
-    function dbReset()
-    {
-      domConstruct.empty('messages');
-      createAndAppendMsg('stat_msg', {type:'internal', name:'db_reset'});
-    }
+         function createAndAppendMsg(src, msg) {
+            appendMsg(createMsgElement(src, msg));
+         }
 
-    function displayMsgAtNdx(e)
-    {
-      var ndx = e.ndx;
-      if (ndx != undefined){
-        var msg_div = dom.byId('ndx_'+e.ndx);
-        if (msg_div != undefined){
-          msg_data = domConstruct.create('div', {id:'div_data_ndx_' + ndx, class:'div_msg_data'}, msg_div);
-          msg_data.textContent = JSON.stringify(e.data);
-        }
-      }
-    }
 
-    var ws_diag = new io.connect('http://localhost:5000/messages');
-    ws_diag.on('ui_msg', function(e){
-      createAndAppendMsg('ui_msg', e);
-    });
-    ws_diag.on('av_msg', function(e){
-      createAndAppendMsg('av_msg', e)
-    });
-    ws_diag.on('connect', function(e){
-      createAndAppendMsg('stat_msg', {type:'internal', name:'Connected'});
-    });
-    ws_diag.on('disconnect', function(e){
-      createAndAppendMsg('stat_msg', {type:'internal', name:'Disconnected'});
-    });
-    ws_diag.on('db_ndx', function(e){
-      if (e.db_ndx < db_ndx){
-        dbReset();
-        db_ndx = e.db_ndx;
-      }
-    });
-    ws_diag.on('db_request', function(e){
-      displayMsgAtNdx(e);
-    });
-  });
-  </script></body>
-  </html>
+         function dbReset() {
+            domConstruct.empty('messages');
+            createAndAppendMsg('stat_msg', {
+               type: 'internal',
+               name: 'db_reset'
+            });
+         }
+
+         function displayMsgAtNdx(e) {
+            var ndx = e.ndx;
+            if (ndx != undefined) {
+               var msg_div = dom.byId('ndx_' + e.ndx);
+               if (msg_div != undefined) {
+                  var msg_id_name = 'div_data_ndx_' + ndx;
+                  msg_data = domConstruct.create('div', {
+                     id: msg_id_name,
+                     class: 'div_msg_data'
+                  }, msg_div);
+                  $('#' + msg_id_name).JSONView(e.data, {
+                     collapsed: true,
+                     nl2br: true,
+                     recursive_collapser: true
+                  });
+               }
+            }
+         }
+
+         var ws_diag = new io.connect('http://localhost:5000/messages');
+         ws_diag.on('ui_msg', function(e) {
+            createAndAppendMsg('ui_msg', e);
+         });
+         ws_diag.on('av_msg', function(e) {
+            createAndAppendMsg('av_msg', e)
+         });
+         ws_diag.on('connect', function(e) {
+            createAndAppendMsg('stat_msg', {
+               type: 'internal',
+               name: 'Connected'
+            });
+         });
+         ws_diag.on('disconnect', function(e) {
+            createAndAppendMsg('stat_msg', {
+               type: 'internal',
+               name: 'Disconnected'
+            });
+         });
+         ws_diag.on('db_ndx', function(e) {
+            if (e.db_ndx < db_ndx) {
+               dbReset();
+               db_ndx = e.db_ndx;
+            }
+         });
+         ws_diag.on('db_request', function(e) {
+            displayMsgAtNdx(e);
+         });
+      });
+   </script>
+</body>
+
+</html>

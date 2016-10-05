@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, send_from_directory
 from flask_socketio import SocketIO, emit, Namespace
 import json
 import redis
@@ -44,6 +44,12 @@ def StripMessage(j):
         else:
             rv['name'] = '(' + j['request']['type'] + '@' + j['request']['name'] + ')'
     return rv
+
+
+
+@app.route('/libs/<path:path>')
+def send_js(path):
+    return send_from_directory('libs', path)
 
 
 @app.route('/messages')
