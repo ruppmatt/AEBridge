@@ -4,13 +4,13 @@
    <title>Avida-ED Diagnostics</title>
    <link rel='stylesheet' type='text/css' href='libs/jquery.jsonview.css'>
    <style>
-      .div_msg_root {
+      .msg {
          width: 100%;
          padding: 5px;
          overflow: hidden;
       }
 
-      .div_msg_num {
+      .msg .ndx{
          float: left;
          width: 15%;
          margin-right: 5px;
@@ -18,33 +18,50 @@
          font-size: small;
       }
 
-      .div_msg_msg {
+      .msg .entry  {
          overflow: hidden;
          border: solid;
       }
 
-      .div_msg_header {
+      .msg .entry .header {
          font-weight: bold;
          padding: 5px;
       }
 
-      .div_msg_data {
+      .msg .entry .header .io_type {
+        min-width:1em;
+        float:left;
+        text-align:left;
+      }
+
+      .msg .entry .header .title {
+      }
+
+      .msg .entry .data {
          word-break: break-all;
          margin: auto;
          padding: 10px;
          padding-bottom: 10px;
       }
 
-      .div_av_msg {
+      .msg.av {
          color: green;
       }
 
-      .div_ui_msg {
+      .msg.ui {
          color: blue;
       }
 
-      .div_stat_msg {
+      .msg.internal {
          color: gray;
+      }
+
+      .msg.av_command {
+         color: purple;
+      }
+
+      .msg.av_debug {
+         color: pink;
       }
    </style>
 
@@ -68,14 +85,29 @@
          'dojo/dom-class',
          'dojo/dom-style',
          'dojo/_base/lang',
+         'dojo/_base/array',
          'dojo/on',
          'dojo/query',
          'jquery'
-      ], function(dom, domConstruct, domAttr, domClass, domStyle, lang, on, query, jQuery) {
+      ], function(dom, domConstruct, domAttr, domClass, domStyle, lang, array, on, query, jQuery) {
+
+         //Get jquery and json view (which depends on it) seutp
          var $ = jQuery;
          $.getScript('/libs/jquery.jsonview.js');
-         var db_ndx = -1;
 
+         var datetime_opts = {
+           hour12:false,
+           hour:'2-digit',
+           minute:'2-digit'
+         };
+
+         /*
+          Toggle whether or not a message is displayed.  If there is currently
+          no data being displayed inside for this message, then go ahead
+          and request that the full message be retrieved and displayed.
+          Otherwise, delete the dom element currently displaying the message
+          rather than trying to hide it (to save resources).
+         */
          function toggleMsgByNdx(ndx) {
             if (ndx != '-') {
                var existing_data = dom.byId('div_data_ndx_' + ndx);
@@ -89,67 +121,128 @@
             }
          }
 
+
+
+         /*
+          Place each message div in the main messages div.
+          Message headings require special handling to get
+          the inverted coloring properly set.
+         */
          function appendMsg(node) {
             var msg_div = dom.byId('messages');
             domConstruct.place(node, msg_div);
-            query('.div_msg_header', node).forEach(function(n) {
+            query('.entry>.header', node).forEach(function(n) {
                var s = domStyle.getComputedStyle(n);
                domStyle.set(n, 'background-color', s.color);
                domStyle.set(n, 'color', 'white');
             });
          }
 
-         function createMsgElement(src, msg) {
-            var ndx = (msg['_ndx'] != undefined) ? JSON.stringify(msg['_ndx']) : '-';
-            var msg_type = (msg.type != undefined) ? msg.type : "Unknown";
-            var msg_name = (msg.name != undefined) ? msg.name : "";
-            var div_msg_class = 'div_' + src;
 
-            if (msg_type == 'userFeedback') {
-               msg_name = msg.level;
+         /*
+          Create the div element for each message to be displayed
+         */
+         function createMsgElement(msg) {
+            console.log(msg);
+            if (msg.meta === undefined || msg.data === undefined){
+              console.log('Ignoring message: ' + JSON.stringify(msg));
             }
 
-            var root_div = domConstruct.create('div', {
-               class: 'div_msg_root ' + div_msg_class
-            });
-            var num_div = domConstruct.create('div', {
-               class: 'div_msg_num'
-            }, root_div);
-            num_div.textContent = '[' + ndx +
-               ((msg['_update'] != undefined) ? ' @ ' + msg['_update'] : '') + ']';
+            var meta = msg['meta'];
+            var data = msg['data'];
+            var ndx = ( meta._ndx !== undefined) ? JSON.stringify(meta['_ndx']) : '';
+            var msg_type = (data.type !== undefined) ? data.type : "Unknown";
+            var msg_name = (data.name !== undefined) ? data.name : "";
+            var msg_from = (meta._from !== undefined) ? meta._from : "unknown";
+            var is_data = (meta._from === 'internal') ? '' : 'is_data';
+            var update = (meta._tx_update !== undefined) ? meta._tx_update : (new Intl.DateTimeFormat('en-US',datetime_opts)).format(new Date())
+            var msg_io_type = (meta._io_type !== undefined) ? meta._io_type : '-';
+            switch (msg_io_type.toLowerCase()){
+              case undefined:
+                msg_io_type = '&MediumSpace';
+                break;
+              case 'in':
+                msg_io_type = '&#10094;';
+                break;
+              case 'out':
+                msg_io_type = '&#10095;';
+                break;
+              case '-':
+                msg_io_type = '&sdot;';
+                break;
+              default:
+                msg_io_type = '&EmptyVerySmallSquare';
+                break;
+            }
 
-            var msg_div = domConstruct.create('div', {
-               id: 'ndx_' + ndx,
-               class: 'div_msg_msg'
-            }, root_div);
-            var msg_header = domConstruct.create('div', {
-               class: 'div_msg_header'
-            }, msg_div);
-            msg_header.textContent = msg_type + ' : ' + msg_name;
+            if (msg_type == 'userFeedback') {
+               msg_name = data.level;
+            }
+
+            // Message Entry Container
+            var root_div = domConstruct.create('div', {class:'msg ' + is_data + ' ' + msg_from});
+            var num_div = domConstruct.create('div',  {class:'ndx'}, root_div);
+            num_div.textContent = '[' + ndx + ' @ ' + update + ']';
+
+            // Message Entry
+            var msg_div = domConstruct.create('div', {id: 'ndx_' + ndx, class: 'entry'}, root_div);
+
+            // Message Entry Header
+            var msg_header_div = domConstruct.create('div', {class:'header'}, msg_div);
+            var msg_header_IO_div = domConstruct.create('div', {class:'io_type'}, msg_header_div);
+            msg_header_IO_div.innerHTML = msg_io_type;
+            var msg_header_title_div = domConstruct.create('div', {class:'title'}, msg_header_div);
+            msg_header_title_div.innerHTML = msg_type + ' : ' + msg_name;
 
             if (ndx != '-') {
                var _this = this;
                var f = lang.hitch(_this, toggleMsgByNdx, ndx);
-               on(msg_header, 'click', f);
+               on(msg_header_div, 'click', f);
             }
 
             return root_div;
          }
 
 
-         function createAndAppendMsg(src, msg) {
-            appendMsg(createMsgElement(src, msg));
+
+         /*
+          When a new message is received, create the appropriate nodes
+          and append them to the messages div.
+         */
+         function createAndAppendMessage(msg) {
+            appendMsg(createMsgElement(msg));
          }
 
-
-         function dbReset() {
-            domConstruct.empty('messages');
-            createAndAppendMsg('stat_msg', {
-               type: 'internal',
-               name: 'db_reset'
+         /*
+          Sometimes, especially when the socket server is reset, the messages
+          being dispalyed are out of sync with what the server contains.  When
+          a refresh is necessary, delete all data message elements and redisplay
+          the conents of the messages in the database.
+         */
+         function doMessageRefresh(msgs) {
+            array.forEach( query('.is_data'), function(n) { domConstruct.destroy(n);} );
+            createAndAppendMessage({
+              meta:{
+                _from: 'internal'
+              },
+              data:{
+                type: 'DB',
+                name: 'db_refresh'
+              }
+            });
+            array.forEach(msgs, function(m) {
+               console.log(JSON.stringify(m));
+               createAndAppendMessage(m);
             });
          }
 
+
+         /*
+          When a message is requested to be displayed (usually if the header
+          for the message, which is always displayed, is clicked), this method
+          is called when the server makes it available.  The necessary div
+          elements and json view objects are created at this time.
+         */
          function displayMsgAtNdx(e) {
             var ndx = e.ndx;
             if (ndx != undefined) {
@@ -169,30 +262,39 @@
             }
          }
 
+
+
+         /* =============================================================
+         All of our socket communication handlers are below
+         ============================================================= */
          var ws_diag = new io.connect('http://localhost:5000/messages');
-         ws_diag.on('ui_msg', function(e) {
-            createAndAppendMsg('ui_msg', e);
-         });
-         ws_diag.on('av_msg', function(e) {
-            createAndAppendMsg('av_msg', e)
+         ws_diag.on('message', function(e) {
+            createAndAppendMessage(e);
          });
          ws_diag.on('connect', function(e) {
-            createAndAppendMsg('stat_msg', {
-               type: 'internal',
-               name: 'Connected'
+            createAndAppendMessage({
+               meta:{
+                _from: 'internal'
+               },
+               data:{
+                 type: 'Socket',
+                 name: 'Connected'
+               }
             });
          });
          ws_diag.on('disconnect', function(e) {
-            createAndAppendMsg('stat_msg', {
-               type: 'internal',
-               name: 'Disconnected'
+            createAndAppendMessage({
+              meta:{
+                _from: 'internal'
+              },
+              data:{
+                type: 'Socket',
+                name: 'Disconnected'
+              }
             });
          });
-         ws_diag.on('db_ndx', function(e) {
-            if (e.db_ndx < db_ndx) {
-               dbReset();
-               db_ndx = e.db_ndx;
-            }
+         ws_diag.on('db_refresh', function(e) {
+            doMessageRefresh(e);
          });
          ws_diag.on('db_request', function(e) {
             displayMsgAtNdx(e);

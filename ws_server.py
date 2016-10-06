@@ -14,29 +14,67 @@ messages_socket = None
 console_socket = None
 
 r_server = redis.StrictRedis('localhost');
+r_server.flushdb()
 r_server.set('_ndx', -1);
 
+
 def MakeKey(ndx):
+    """
+    From a numerical index, create the document key for the database.
+    """
     return 'msg::' + str(ndx)
 
 
 def ProcessMessage(j):
+    """
+    For an incoming message prepare it for transmission to the messages_socket
+    client by stripping unnecessary information and store it in the database.
+    """
     global r_server
-    msg = StripMessage(j)
     ndx = r_server.incr('_ndx')
-    msg['_ndx'] = ndx
-    compressed = zlib.compress(pickle.dumps(j),9)
+    data = j['data']
+    meta = j['meta']
+    j['meta']['_ndx'] = ndx
+    msg =  {
+            'data':data,
+            'meta':meta
+            }
+    compressed = zlib.compress(pickle.dumps(msg),9)
     r_server.set(MakeKey(ndx), compressed)
-    return msg
+    return {'data':StripMessage(data), 'meta':meta}
 
 
 def GetMessage(ndx):
+    """
+    Given a numerical index return the message from the database.
+    """
     return pickle.loads(zlib.decompress(r_server.get(MakeKey(ndx))))
 
 
+def DumpMessages():
+    """
+    Return a list of all (stripped) messages currently in the
+    database
+    """
+    global r_server
+    ndx = int(r_server.get('_ndx'))
+    if ndx < 0:
+        return None
+    compressed = r_server.mget(MakeKey(0),MakeKey(ndx))
+    print(compressed)
+    if compressed[0] == None:
+        return None
+    uncompressed = list(map(lambda s: pickle.loads(zlib.decompress(s)) if s else None, compressed[:-1]))
+    print(uncompressed)
+    return uncompressed
+
 
 def StripMessage(j):
-    rv = {k:j[k] for k in ['type','name','level','_update'] if k in j}
+    """
+    Strip the message of all but the most necessary information for the
+    message client.  Full messages can be retrieved later for dispaly.
+    """
+    rv = {k:j[k] for k in ['type','name','level'] if k in j}
 
     if rv['type'] == 'response':
         if 'name' not in j['request']:
@@ -49,14 +87,20 @@ def StripMessage(j):
 
 @app.route('/libs/<path:path>')
 def send_js(path):
+    """
+        Serve the libs directory for things like json scripts and associated css
+    """
     return send_from_directory('libs', path)
 
 
+# Serve the messages page
 @app.route('/messages')
 def messages():
     return render_template('messages.html')
 
 
+
+# Handle socket support for the avida client
 class AvidaClient(Namespace):
     def on_connect(self):
         global avida_client
@@ -68,25 +112,26 @@ class AvidaClient(Namespace):
         print('Avida client disconnected:', avida_client)
         avida_client = None
 
-    def on_ui_msg(self, msg):
+    def on_message(self, msg):
+        """User interface messages"""
         global messages_socket
         if messages_socket:
-            emit('ui_msg', ProcessMessage(msg), namespace='/messages', room=messages_socket);
-
-    def on_av_msg(self, msg):
-        global messages_socket
-        if messages_socket:
-            emit('av_msg', ProcessMessage(msg), namespace='/messages', room=messages_socket);
+            emit('message', ProcessMessage(msg), namespace='/messages', room=messages_socket);
 
 
+
+# Handle socket support for messages client
 class MessagesClient(Namespace):
     def on_connect(self):
+        """
+        Immediately relay the current state of the message database to the
+        messages page to prevent if from dispalying stale data.
+        """
         global messages_socket
         global r_server
         messages_socket = request.sid
         print('Message client connected:', messages_socket)
-        db_ndx = r_server.get('_ndx')
-        emit('db_ndx', db_ndx)
+        emit('db_refresh', DumpMessages())
 
     def on_disconnect(self):
         global messages_socket
@@ -94,18 +139,47 @@ class MessagesClient(Namespace):
         messages_socket = None
 
     def on_send_command(self,msg):
-        global avida_socket
-        if avida_socket:
-            emit('command', msg, namespace='/avida', room=avida_socket)
+        """
+        Presumably the messages page can send commands.  This isn't used at
+        at the moment.
+        """
+        pass
 
     def on_db_request(self, msg):
+        """
+        The message page's javascript will request messages from the database
+        with a particular numerical index.  This method retrieves those
+        messages or silently eats the request if the message is not available.
+        """
         db_msg = GetMessage(msg['ndx'])
         if db_msg != None:
             emit('db_request', {'ndx':msg['ndx'], 'data':db_msg})
 
 
+
+# Handle socket communication for an external command issuer to avida
+class ExternalCommandClient(Namespace):
+    def on_connect(self):
+        global command_socket
+        command_socket = request.sid
+        print('External command client connected: ', command_socket)
+
+    def on_disconnect(self):
+        global command_socket
+        command_socket = None
+        print('External command client disconnected.')
+
+    def on_issue_command(self, msg):
+        """Relay command message to the Avida client if available."""
+        global avida_socket
+        if avida_socket:
+            emit('ext_command', msg, namespace='/avida', room=avida_socket)
+
+
+
 socketio.on_namespace(AvidaClient('/avida'))
 socketio.on_namespace(MessagesClient('/messages'))
+socketio.on_namespace(ExternalCommandClient('/command'))
 
 if __name__ == '__main__':
     socketio.run(app)
