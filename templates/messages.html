@@ -121,6 +121,15 @@
                case 'update':
                   msg_name = data.update;
                   break;
+                case 'av_debug':
+                  msg_name = '';
+                  if (Array.isArray(data.mode)){
+                    for (k=0; k<data.mode.length-1; k++){
+                      msg_name += data.mode[k] + ' &diamond; ';
+                    }
+                    msg_name += data.mode[data.mode.length-1];
+                  }
+                  break;
             };
 
 

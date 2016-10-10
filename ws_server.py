@@ -78,11 +78,9 @@ def DumpMessages():
     if ndx < 0:
         return None
     compressed = r_server.mget(MakeKey(0),MakeKey(ndx))
-    print(compressed)
     if compressed[0] == None:
         return None
     uncompressed = list(map(lambda s: pickle.loads(zlib.decompress(s)) if s else None, compressed[:-1]))
-    print(uncompressed)
     return uncompressed
 
 
@@ -91,7 +89,7 @@ def StripMessage(j):
     Strip the message of all but the most necessary information for the
     message client.  Full messages can be retrieved later for dispaly.
     """
-    rv = {k:j[k] for k in ['type','name','level', 'update'] if k in j}
+    rv = {k:j[k] for k in ['type', 'name', 'level', 'update', 'mode'] if k in j}
 
     if rv['type'] == 'response':
         if 'name' not in j['request']:
