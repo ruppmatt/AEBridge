@@ -13,6 +13,7 @@ import zlib
 from nocache import nocache
 
 
+
 app = Flask(__name__)
 socketio = SocketIO(app)
 
@@ -193,6 +194,7 @@ class ExternalCommandClient(Namespace):
     def on_issue_command(self, msg):
         """Relay command message to the Avida client if available."""
         global avida_socket
+        print('External command: ', str(msg));
         if avida_socket:
             emit('ext_command', msg, namespace='/avida', room=avida_socket)
 
