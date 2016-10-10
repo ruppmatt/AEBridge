@@ -149,7 +149,6 @@ Derrived from github.com/yesmeck/jquery-jsonview
           return _this.toggle(event.target, options);
         };
       })(this));
-      console.log(item.tagName, item.firstChild.tagName);
       item.insertBefore(collapser, item.firstChild);
       if (options.collapsed) {
         return this.collapse(collapser);

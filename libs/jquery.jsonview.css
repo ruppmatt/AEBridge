@@ -92,7 +92,7 @@
 }
 
 .jsonview ul[class^='array'] {
-    counter-reset: item 0;
+    counter-reset: item -1;
 }
 
 .jsonview ul[class^='array']>li:before {
