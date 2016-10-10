@@ -142,8 +142,8 @@ Derrived from github.com/yesmeck/jquery-jsonview
     Collapser.bindEvent = function(item, options) {
       var collapser;
       collapser = document.createElement('div');
-      collapser.className = 'collapser';
-      collapser.innerHTML = options.collapsed ? '+' : '-';
+      collapser.className = 'collapser ' + ( (options.collapsed) ? 'collapsed' : 'expanded');
+      collapser.innerHTML = options.collapsed ? '&#x25B9;' : '&#x25BF;';
       collapser.addEventListener('click', (function(_this) {
         return function(event) {
           return _this.toggle(event.target, options);
@@ -165,8 +165,10 @@ Derrived from github.com/yesmeck/jquery-jsonview
       ellipsis = target.parentNode.getElementsByClassName('ellipsis')[0];
       target.parentNode.removeChild(ellipsis);
       target.style.display = '';
-      return collapser.innerHTML = '-';
+      collapser.className = 'collapser expanded';
+      return collapser.innerHTML = '&#x25BF;';
     };
+
 
     Collapser.collapse = function(collapser) {
       var ellipsis, target;
@@ -179,8 +181,10 @@ Derrived from github.com/yesmeck/jquery-jsonview
       ellipsis.className = 'ellipsis';
       ellipsis.innerHTML = ' &hellip; ';
       target.parentNode.insertBefore(ellipsis, target);
-      return collapser.innerHTML = '+';
+      collapser.className = 'collapser collapsed';
+      return collapser.innerHTML = '&#x25B9;';
     };
+
 
     Collapser.toggle = function(collapser, options) {
       var action, collapsers, target, _i, _len, _results;
@@ -217,12 +221,12 @@ Derrived from github.com/yesmeck/jquery-jsonview
   $ = jQuery;
   JSONView = {
     collapse: function(el) {
-      if (el.innerHTML === '-') {
+      if (el.classList.contains('expanded')) {
         return Collapser.collapse(el);
       }
     },
     expand: function(el) {
-      if (el.innerHTML === '+') {
+      if (el.classList.contains('collapsed')) {
         return Collapser.expand(el);
       }
     },

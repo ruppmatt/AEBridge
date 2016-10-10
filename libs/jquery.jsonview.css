@@ -46,7 +46,9 @@
     position: absolute;
     cursor: pointer;
     left: -1em;
+    min-width: 1em;
 }
+
 
 .jsonview .collapsible {
 }

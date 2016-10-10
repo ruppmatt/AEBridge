@@ -82,11 +82,6 @@
           Create the div element for each message to be displayed
          */
          function createMsgElement(msg) {
-            console.log(msg);
-            if (msg.meta === undefined || msg.data === undefined) {
-               console.log('Ignoring message: ' + JSON.stringify(msg));
-            }
-
             var meta = msg['meta'];
             var data = msg['data'];
             var ndx = (meta._ndx !== undefined) ? JSON.stringify(meta['_ndx']) : '';
