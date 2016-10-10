@@ -1,1 +1,7 @@
 venv
+__pycache__
+*.tags
+.ipynb_checkpoints/
+*.ipynb
+*.rdb
+

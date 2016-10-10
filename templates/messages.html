@@ -3,68 +3,7 @@
 <head>
    <title>Avida-ED Diagnostics</title>
    <link rel='stylesheet' type='text/css' href='libs/jquery.jsonview.css'>
-   <style>
-      .msg {
-         width: 100%;
-         padding: 5px;
-         overflow: hidden;
-      }
-
-      .msg .ndx{
-         float: left;
-         width: 15%;
-         margin-right: 5px;
-         text-align: right;
-         font-size: small;
-      }
-
-      .msg .entry  {
-         overflow: hidden;
-         border: solid;
-      }
-
-      .msg .entry .header {
-         font-weight: bold;
-         padding: 5px;
-      }
-
-      .msg .entry .header .io_type {
-        min-width:1em;
-        float:left;
-        text-align:left;
-      }
-
-      .msg .entry .header .title {
-      }
-
-      .msg .entry .data {
-         word-break: break-all;
-         margin: auto;
-         padding: 10px;
-         padding-bottom: 10px;
-      }
-
-      .msg.av {
-         color: green;
-      }
-
-      .msg.ui {
-         color: blue;
-      }
-
-      .msg.internal {
-         color: gray;
-      }
-
-      .msg.av_command {
-         color: purple;
-      }
-
-      .msg.av_debug {
-         color: pink;
-      }
-   </style>
-
+   <link rel='stylesheet' type='text/css' href='libs/messages.css'>
 </head>
 
 <body>
@@ -96,9 +35,9 @@
          $.getScript('/libs/jquery.jsonview.js');
 
          var datetime_opts = {
-           hour12:false,
-           hour:'2-digit',
-           minute:'2-digit'
+            hour12: false,
+            hour: '2-digit',
+            minute: '2-digit'
          };
 
          /*
@@ -144,54 +83,78 @@
          */
          function createMsgElement(msg) {
             console.log(msg);
-            if (msg.meta === undefined || msg.data === undefined){
-              console.log('Ignoring message: ' + JSON.stringify(msg));
+            if (msg.meta === undefined || msg.data === undefined) {
+               console.log('Ignoring message: ' + JSON.stringify(msg));
             }
 
             var meta = msg['meta'];
             var data = msg['data'];
-            var ndx = ( meta._ndx !== undefined) ? JSON.stringify(meta['_ndx']) : '';
+            var ndx = (meta._ndx !== undefined) ? JSON.stringify(meta['_ndx']) : '';
             var msg_type = (data.type !== undefined) ? data.type : "Unknown";
             var msg_name = (data.name !== undefined) ? data.name : "";
             var msg_from = (meta._from !== undefined) ? meta._from : "unknown";
             var is_data = (meta._from === 'internal') ? '' : 'is_data';
-            var update = (meta._tx_update !== undefined) ? meta._tx_update : (new Intl.DateTimeFormat('en-US',datetime_opts)).format(new Date())
+            var update = (meta._tx_update !== undefined) ? meta._tx_update : (new Intl.DateTimeFormat('en-US', datetime_opts)).format(new Date())
             var msg_io_type = (meta._io_type !== undefined) ? meta._io_type : '-';
-            switch (msg_io_type.toLowerCase()){
-              case undefined:
-                msg_io_type = '&MediumSpace';
-                break;
-              case 'in':
-                msg_io_type = '&#10094;';
-                break;
-              case 'out':
-                msg_io_type = '&#10095;';
-                break;
-              case '-':
-                msg_io_type = '&sdot;';
-                break;
-              default:
-                msg_io_type = '&EmptyVerySmallSquare';
-                break;
-            }
 
-            if (msg_type == 'userFeedback') {
-               msg_name = data.level;
-            }
+
+            // Provide icons for IN or OUT messages
+            switch (msg_io_type.toLowerCase()) {
+               case undefined:
+                  msg_io_type = '&MediumSpace';
+                  break;
+               case 'in':
+                  msg_io_type = '&#10094;';
+                  break;
+               case 'out':
+                  msg_io_type = '&#10095;';
+                  break;
+               case '-':
+                  msg_io_type = '&sdot;';
+                  break;
+               default:
+                  msg_io_type = '&EmptyVerySmallSquare';
+                  break;
+            };
+
+            // Some messages have additional information that can be placed
+            // into the header
+            switch (msg_type) {
+               case 'userFeedback':
+                  msg_name = data.level;
+                  break;
+               case 'update':
+                  msg_name = data.update;
+                  break;
+            };
+
 
             // Message Entry Container
-            var root_div = domConstruct.create('div', {class:'msg ' + is_data + ' ' + msg_from});
-            var num_div = domConstruct.create('div',  {class:'ndx'}, root_div);
+            var root_div = domConstruct.create('div', {
+               class: 'msg ' + is_data + ' ' + msg_from
+            });
+            var num_div = domConstruct.create('div', {
+               class: 'ndx'
+            }, root_div);
             num_div.textContent = '[' + ndx + ' @ ' + update + ']';
 
             // Message Entry
-            var msg_div = domConstruct.create('div', {id: 'ndx_' + ndx, class: 'entry'}, root_div);
+            var msg_div = domConstruct.create('div', {
+               id: 'ndx_' + ndx,
+               class: 'entry'
+            }, root_div);
 
             // Message Entry Header
-            var msg_header_div = domConstruct.create('div', {class:'header'}, msg_div);
-            var msg_header_IO_div = domConstruct.create('div', {class:'io_type'}, msg_header_div);
+            var msg_header_div = domConstruct.create('div', {
+               class: 'header'
+            }, msg_div);
+            var msg_header_IO_div = domConstruct.create('div', {
+               class: 'io_type'
+            }, msg_header_div);
             msg_header_IO_div.innerHTML = msg_io_type;
-            var msg_header_title_div = domConstruct.create('div', {class:'title'}, msg_header_div);
+            var msg_header_title_div = domConstruct.create('div', {
+               class: 'title'
+            }, msg_header_div);
             msg_header_title_div.innerHTML = msg_type + ' : ' + msg_name;
 
             if (ndx != '-') {
@@ -220,15 +183,17 @@
           the conents of the messages in the database.
          */
          function doMessageRefresh(msgs) {
-            array.forEach( query('.is_data'), function(n) { domConstruct.destroy(n);} );
+            array.forEach(query('.is_data'), function(n) {
+               domConstruct.destroy(n);
+            });
             createAndAppendMessage({
-              meta:{
-                _from: 'internal'
-              },
-              data:{
-                type: 'DB',
-                name: 'db_refresh'
-              }
+               meta: {
+                  _from: 'internal'
+               },
+               data: {
+                  type: 'DB',
+                  name: 'db_refresh'
+               }
             });
             array.forEach(msgs, function(m) {
                console.log(JSON.stringify(m));
@@ -273,24 +238,24 @@
          });
          ws_diag.on('connect', function(e) {
             createAndAppendMessage({
-               meta:{
-                _from: 'internal'
+               meta: {
+                  _from: 'internal'
                },
-               data:{
-                 type: 'Socket',
-                 name: 'Connected'
+               data: {
+                  type: 'Socket',
+                  name: 'Connected'
                }
             });
          });
          ws_diag.on('disconnect', function(e) {
             createAndAppendMessage({
-              meta:{
-                _from: 'internal'
-              },
-              data:{
-                type: 'Socket',
-                name: 'Disconnected'
-              }
+               meta: {
+                  _from: 'internal'
+               },
+               data: {
+                  type: 'Socket',
+                  name: 'Disconnected'
+               }
             });
          });
          ws_diag.on('db_refresh', function(e) {

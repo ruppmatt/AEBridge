@@ -1,0 +1,63 @@
+@charset "UTF-8";
+
+.msg {
+   width: 100%;
+   padding: 5px;
+   overflow: hidden;
+}
+
+.msg .ndx{
+   float: left;
+   width: 15%;
+   margin-right: 5px;
+   text-align: right;
+   font-size: small;
+}
+
+.msg .entry  {
+   overflow: scroll;
+   border: solid;
+   min-width:80%;
+}
+
+.msg .entry .header {
+   font-weight: bold;
+   letter-spacing: 2px;
+   padding: 5px;
+}
+
+.msg .entry .header .io_type {
+  min-width:1em;
+  float:left;
+  text-align:left;
+}
+
+.msg .entry .header .title {
+}
+
+.msg .entry .data {
+   word-break: break-all;
+   margin: auto;
+   padding: 10px;
+   padding-bottom: 10px;
+}
+
+.msg.av {
+   color: #93b26b;
+}
+
+.msg.ui {
+   color: #5098b4;
+}
+
+.msg.internal {
+   color: #afc4cc;
+}
+
+.msg.av_command {
+   color: #93b26b;
+}
+
+.msg.av_debug {
+   color: #93b26b;
+}

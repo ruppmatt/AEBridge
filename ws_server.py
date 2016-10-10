@@ -1,9 +1,16 @@
+"""
+Page generated using examples from:
+https://flask-socketio.readthedocs.io/en/latest/
+https://arusahni.net/blog/2014/03/flask-nocache.html
+"""
+
 from flask import Flask, render_template, request, send_from_directory
 from flask_socketio import SocketIO, emit, Namespace
 import json
 import redis
 import pickle
 import zlib
+from nocache import nocache
 
 
 app = Flask(__name__)
@@ -13,9 +20,19 @@ avida_socket = None
 messages_socket = None
 console_socket = None
 
-r_server = redis.StrictRedis('localhost');
-r_server.flushdb()
-r_server.set('_ndx', -1);
+r_server = redis.StrictRedis('localhost')
+
+
+
+def FlushDB():
+    """ Flush the DB """
+    global r_server
+    p = r_server.pipeline()
+    p.flushdb()
+    p.set('_ndx', -1);
+    p.execute()
+    print('Flushing DB')
+
 
 
 def MakeKey(ndx):
@@ -74,7 +91,7 @@ def StripMessage(j):
     Strip the message of all but the most necessary information for the
     message client.  Full messages can be retrieved later for dispaly.
     """
-    rv = {k:j[k] for k in ['type','name','level'] if k in j}
+    rv = {k:j[k] for k in ['type','name','level', 'update'] if k in j}
 
     if rv['type'] == 'response':
         if 'name' not in j['request']:
@@ -86,6 +103,7 @@ def StripMessage(j):
 
 
 @app.route('/libs/<path:path>')
+@nocache
 def send_js(path):
     """
         Serve the libs directory for things like json scripts and associated css
@@ -95,6 +113,7 @@ def send_js(path):
 
 # Serve the messages page
 @app.route('/messages')
+@nocache
 def messages():
     return render_template('messages.html')
 
@@ -103,20 +122,24 @@ def messages():
 # Handle socket support for the avida client
 class AvidaClient(Namespace):
     def on_connect(self):
-        global avida_client
-        avida_client = request.sid
-        print('Avida client connected:', avida_client)
+        global avida_socket
+        global messages_socket
+        avida_socket = request.sid
+        FlushDB()
+        print('Avida client connected:', avida_socket)
+        if messages_socket:
+            emit('db_refresh', namespace='/messages', room=messages_socket)
 
     def on_disconnect(self):
-        global avida_client
-        print('Avida client disconnected:', avida_client)
-        avida_client = None
+        global avida_socket
+        print('Avida client disconnected:', avida_socket)
+        avida_socket = None
 
     def on_message(self, msg):
         """User interface messages"""
         global messages_socket
         if messages_socket:
-            emit('message', ProcessMessage(msg), namespace='/messages', room=messages_socket);
+            emit('message', ProcessMessage(msg), namespace='/messages', room=messages_socket)
 
 
 
@@ -182,4 +205,5 @@ socketio.on_namespace(MessagesClient('/messages'))
 socketio.on_namespace(ExternalCommandClient('/command'))
 
 if __name__ == '__main__':
+    FlushDB()
     socketio.run(app)
