@@ -61,7 +61,7 @@ Messages may be loaded by clicking on their individual heading; and unloaded the
 
 Because all messages are in JSON format, a modified version of a `port of JSONView <https://github.com/yesmeck/jquery-jsonview>`_ is used to help navigate the material send between the Avida worker and the client(s).
 
-
+Something changed...
 
 cmd_socket.py
 -------------
