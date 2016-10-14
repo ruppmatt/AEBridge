@@ -161,7 +161,7 @@
             }, msg_header_div);
             msg_header_title_div.innerHTML = msg_type + ' : ' + msg_name;
 
-            if (ndx != '-') {
+            if (is_data) {
                var _this = this;
                var f = lang.hitch(_this, toggleMsgByNdx, ndx);
                on(msg_header_div, 'click', f);
