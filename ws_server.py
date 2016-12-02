@@ -109,12 +109,25 @@ def send_js(path):
     """
     return send_from_directory('libs', path)
 
+@app.route('/css/<path:path>')
+@nocache
+def send_css(path):
+    """
+        Serve the libs directory for things like json scripts and associated css
+    """
+    return send_from_directory('css', path)
 
 # Serve the messages page
 @app.route('/messages')
 @nocache
 def messages():
     return render_template('messages.html')
+
+# Serve the logger page
+@app.route('/logger')
+@nocache
+def logger():
+    return render_template('logger.html')
 
 
 
