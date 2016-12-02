@@ -17,11 +17,17 @@ from nocache import nocache
 app = Flask(__name__)
 socketio = SocketIO(app)
 
-avida_socket = None
-messages_socket = None
-console_socket = None
+sockets = {};
 
 r_server = redis.StrictRedis('localhost')
+
+
+def SetupSocketInfo():
+    global sockets
+    sockets['avida'] = {'id':None, 'namespace':'/avida'}
+    sockets['messages'] = {'id':None, 'namespace':'/messages'}
+    sockets['logger'] = {'id':None, 'namespace':'/logger'}
+    sockets['command'] = {'id':None, 'namespace':'/command'}
 
 
 
@@ -100,6 +106,30 @@ def StripMessage(j):
     return rv
 
 
+def UpdateAvidaStatus(ns):
+    global sockets
+    if sockets['avida']['id']:
+        OnAvidaConnect(ns)
+    else:
+        OnAvidaDisconnect(ns)
+
+def OnAvidaConnect(ns):
+    global sockets
+    event = 'avida-online'
+    for s in ['messages','logger']:
+        if sockets[s]['id']:
+            emit(event, namespace=sockets[s]['namespace'], room=sockets[s]['id'])
+
+
+def OnAvidaDisconnect(ns):
+    global sockets
+    event = 'avida-offline'
+    for s in ['messages','logger']:
+        if sockets[s]['id']:
+            emit(event, namespace=sockets[s]['namespace'], room=sockets[s]['id'])
+
+
+
 
 @app.route('/libs/<path:path>')
 @nocache
@@ -131,27 +161,28 @@ def logger():
 
 
 
+
+
 # Handle socket support for the avida client
 class AvidaClient(Namespace):
     def on_connect(self):
-        global avida_socket
-        global messages_socket
-        avida_socket = request.sid
+        global sockets
+        sockets['avida']['id'] = request.sid;
         FlushDB()
-        print('Avida client connected:', avida_socket)
-        if messages_socket:
-            emit('db_refresh', namespace='/messages', room=messages_socket)
+        print('Avida client connected:', sockets['avida']['id'])
+        OnAvidaConnect(Namespace)
 
     def on_disconnect(self):
-        global avida_socket
-        print('Avida client disconnected:', avida_socket)
-        avida_socket = None
+        global sockets
+        print('Avida client disconnected:', sockets['avida']['id'])
+        sockets['avida']['id'] = None
+        OnAvidaDisconnect(Namespace)
 
     def on_message(self, msg):
         """User interface messages"""
-        global messages_socket
-        if messages_socket:
-            emit('message', ProcessMessage(msg), namespace='/messages', room=messages_socket)
+        global sockets
+        if sockets['messages']['id']:
+            emit('message', ProcessMessage(msg), namespace=sockets['messages']['namespace'], room=sockets['messages']['id'])
 
 
 
@@ -162,16 +193,17 @@ class MessagesClient(Namespace):
         Immediately relay the current state of the message database to the
         messages page to prevent if from dispalying stale data.
         """
-        global messages_socket
-        global r_server
-        messages_socket = request.sid
-        print('Message client connected:', messages_socket)
+        global sockets, r_server
+        s = sockets['messages']
+        sockets['messages']['id'] = request.sid
+        print('Message client connected:', sockets['messages']['id'])
         emit('db_refresh', DumpMessages())
+        UpdateAvidaStatus(Namespace)
 
     def on_disconnect(self):
-        global messages_socket
-        print('Message client disconnected:', messages_socket)
-        messages_socket = None
+        global sockets
+        print('Message client disconnected:', socket['messages']['id'])
+        sockets['messages']['id'] = None
 
     def on_send_command(self,msg):
         """
@@ -195,28 +227,46 @@ class MessagesClient(Namespace):
 # Handle socket communication for an external command issuer to avida
 class ExternalCommandClient(Namespace):
     def on_connect(self):
-        global command_socket
-        command_socket = request.sid
-        print('External command client connected: ', command_socket)
+        global sockets
+        sockets['command']['id'] = request.sid
+        print('External command client connected: ', sockets['command']['id'])
 
     def on_disconnect(self):
-        global command_socket
-        command_socket = None
+        global sockets
+        sockets['command']['id'] = None
         print('External command client disconnected.')
 
     def on_issue_command(self, msg):
         """Relay command message to the Avida client if available."""
-        global avida_socket
-        print('External command: ', str(msg));
-        if avida_socket:
-            emit('ext_command', msg, namespace='/avida', room=avida_socket)
+        global sockets
+        if sockets['avida']['id']:
+            emit('ext_command', msg, namespace=sockets['avida']['namespace'], room=sockets['avida']['id'])
 
+
+
+# Handle socket communication with logger utility
+class LoggerClient(Namespace):
+    def on_connect(self):
+        global sockets
+        sockets['logger']['id'] = request.sid
+        print('Logger client connected:', sockets['logger']['id'])
+        UpdateAvidaStatus(Namespace)
+
+
+    def on_disconnect(self):
+        global sockets
+        print('Logger client disconnected:', sockets['logger']['id']);
+        sockets['logger']['id'] = None
 
 
 socketio.on_namespace(AvidaClient('/avida'))
 socketio.on_namespace(MessagesClient('/messages'))
 socketio.on_namespace(ExternalCommandClient('/command'))
+socketio.on_namespace(LoggerClient('/logger'));
+
+
 
 if __name__ == '__main__':
+    SetupSocketInfo()
     FlushDB()
     socketio.run(app)

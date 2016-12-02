@@ -7,17 +7,16 @@
 </head>
 
 <body>
-
-  <div id='header'>
-    <div id='header-menu'></div>
-    <div id='header-nonmenu'>
-      <div id='header-text'>Avida-ED Log Utility</div>
-      <div id='header-status'></div>
-      <div id='header-logname'></div>
-    </div>
-  </div>
-
-  <div id='logger'>Test</div>
+  <script src="//cdn.socket.io/socket.io-1.4.5.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/dojo/1.10.4/dojo/dojo.js" data-dojo-config="
+  async:true,
+  packages:[
+   {name:'jquery', location:'/libs', main:'jquery-3.1.1.min'},
+   {name:'ui-common', location:'/libs', main:'ui-common'},
+   {name:'socket-common', location:'/libs', main:'socket-common'}
+  ]
+  "></script>
+  <script src='libs/logger.js'></script>
 </body>
 
 </html>
