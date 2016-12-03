@@ -37,4 +37,5 @@ require([
         handlers.displayMessageAtNdx(e);
      });
    }
+   handlers.setSocket(socket.getSocket());
 });

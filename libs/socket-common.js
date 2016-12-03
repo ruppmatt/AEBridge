@@ -44,6 +44,6 @@ define(
       avida_online = online;
     }
 
-    return { setupSocket:setupSocket, avidaOnline:avidaOnline, getSocket:getSocket };
+    return { setupSocket:setupSocket, avidaOnline:avidaOnline, getSocket:getSocket, setAvidaOnline:setAvidaOnline };
   }
 );

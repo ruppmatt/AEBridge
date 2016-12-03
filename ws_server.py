@@ -202,7 +202,7 @@ class MessagesClient(Namespace):
 
     def on_disconnect(self):
         global sockets
-        print('Message client disconnected:', socket['messages']['id'])
+        print('Message client disconnected:', sockets['messages']['id'])
         sockets['messages']['id'] = None
 
     def on_send_command(self,msg):

@@ -1,109 +1,22 @@
 @charset "UTF-8";
 
-
-:root {
-  --main-bg-color:white;
-  --main-gray:#f2f2f2;
-  --main-red:#BD1550;
-  --main-orange:#E97F02;
-  --main-yellow:#F8CA00;
-  --main-green:#8A9B0F;
-  --main-blue:#8A9B0F;
-  --main-purple:#CFB6EF;
-  --main-brown:#CFB6EF;
-}
-
-body {
-  margin:10px;
-  background-color:var(--main-bg-color);
-}
-
-#header {
-  background-color:var(--main-gray);
-  font-family:sans-serif;
-}
-
-#header-flex {
-  display:flex;
-  flex-direction:row;
-  justify-content:center;
-  align-items:center;
-}
-
-
-#header > div {
-  padding: 5px;
-}
-
-
-#menu{
-  display:flex;
-  font-size:24pt;
-  flex: 1 1 5%;
-  order:1;
-  justify-content:center;
-}
-
-#menu:after{
-  content:'\2263';
-}
-
-#title {
-  display:flex;
-  flex: 3 1 70%;
-  order:2;
-  font-size:18pt;
-  font-weight:bolder;
-  align-self:stretch;
-  align-items:center;
-  padding-left:10px;
-}
-
-#status {
-  display:flex;
-  flex-direction:column;
-  flex: 1 1 25%;
-  order:3;
-  align-self:center;
-  font-size:10pt;
-  align-items:flex-start;
-}
-
-#status > div {
-  display:flex;
-}
-
-.available {
-  color:var(--main-green);
-}
-
-.unavailable {
-  color:var(--main-red);
-}
-
-.highlight {
-  background-color:var(--main-purple);
-}
-
-
 .msg {
-   width: 100%;
+   display:flex;
+   flex-direction:row;
+   align-items:top;
    padding: 5px;
-   overflow: hidden;
 }
 
 .msg .ndx{
-   float: left;
-   width: 15%;
-   margin-right: 5px;
-   text-align: right;
+   flex: 1 1 15%;
+   justify-content: right;
    font-size: small;
 }
 
 .msg .entry  {
+   flex: 1 1 85%;
    overflow: scroll;
    border: solid;
-   min-width:80%;
 }
 
 .msg .entry .header {
@@ -128,21 +41,21 @@ body {
 }
 
 .msg.av {
-   color: #93b26b;
+   color: var(--main-blue);
 }
 
 .msg.ui {
-   color: #5098b4;
+   color: var(--main-green);
 }
 
 .msg.internal {
-   color: #afc4cc;
+   color: var(--main-purple);
 }
 
 .msg.av_ext_command {
-   color: magenta;
+   color: var(--main-brown);
 }
 
 .msg.av_debug {
-   color: #df9c38;
+   color: var(--main-yellow);
 }

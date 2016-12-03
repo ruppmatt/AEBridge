@@ -1,0 +1,84 @@
+:root {
+  --main-bg-color:white;
+  --main-gray:#f2f2f2;
+  --main-red:#CF1B66;
+  --main-orange:#EFA103;
+  --main-yellow:#FAD800;
+  --main-green:#AAB613;
+  --main-blue:#373CBD;
+  --main-purple:#EBC1F2;
+  --main-brown:#5D0D4D;
+}
+
+body {
+  margin:10px;
+  background-color:var(--main-bg-color);
+}
+
+#header {
+  background-color:var(--main-gray);
+  font-family:sans-serif;
+}
+
+#header-flex {
+  display:flex;
+  flex-direction:row;
+  justify-content:center;
+  align-items:center;
+}
+
+
+#header > div {
+  padding: 5px;
+}
+
+
+#menu{
+  display:flex;
+  font-size:24pt;
+  flex: 1 1 5%;
+  order:1;
+  justify-content:center;
+}
+
+#menu:after{
+  content:'\2263';
+}
+
+#title {
+  display:flex;
+  flex: 3 1 70%;
+  order:2;
+  font-size:18pt;
+  font-weight:bolder;
+  align-self:stretch;
+  align-items:center;
+  padding-left:10px;
+}
+
+#status {
+  display:flex;
+  flex-direction:column;
+  flex: 1 1 25%;
+  order:3;
+  align-self:center;
+  font-size:10pt;
+  align-items:flex-start;
+}
+
+#status > div {
+  display:flex;
+}
+
+
+.available {
+  color:var(--main-green);
+}
+
+.unavailable {
+  color:var(--main-red);
+}
+
+.highlight {
+  background-color:var(--main-purple);
+}

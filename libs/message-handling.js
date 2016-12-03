@@ -12,7 +12,11 @@ define(
      'jquery',
    ], function (dom, domConstruct, domAttr, domClass, domStyle, lang, array, on, query, jQuery){
 
+     var ws_diag = null;
 
+     function setSocket(s){
+       ws_diag = s;
+     }
     //Get jquery and json view (which depends on it) seutp
     var $ = jQuery;
     $.getScript('/libs/jquery.jsonview.js');
@@ -215,7 +219,8 @@ define(
   return {
     createAndAppendMessage:createAndAppendMessage,
     doMessageRefresh:doMessageRefresh,
-    displayMessageAtNdx:displayMessageAtNdx
+    displayMessageAtNdx:displayMessageAtNdx,
+    setSocket:setSocket
   };
 
 });
