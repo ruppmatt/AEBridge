@@ -28,6 +28,7 @@ def SetupSocketInfo():
     sockets['messages'] = {'id':None, 'namespace':'/messages'}
     sockets['logger'] = {'id':None, 'namespace':'/logger'}
     sockets['command'] = {'id':None, 'namespace':'/command'}
+    sockets['executor'] = {'id':None, 'namespace':'/executor'}
 
 
 
@@ -116,7 +117,7 @@ def UpdateAvidaStatus(ns):
 def OnAvidaConnect(ns):
     global sockets
     event = 'avida-online'
-    for s in ['messages','logger']:
+    for s in ['messages','logger','executor']:
         if sockets[s]['id']:
             emit(event, namespace=sockets[s]['namespace'], room=sockets[s]['id'])
 
@@ -159,7 +160,10 @@ def messages():
 def logger():
     return render_template('logger.html')
 
-
+@app.route('/executor')
+@nocache
+def exector():
+    return render_template('executor.html')
 
 
 
@@ -259,11 +263,24 @@ class LoggerClient(Namespace):
         sockets['logger']['id'] = None
 
 
+class ExecutorClient(Namespace):
+    def on_connect(self):
+        global sockets
+        sockets['executor']['id'] = request.sid
+        print('Executor client connected:', sockets['executor']['id'])
+        UpdateAvidaStatus(Namespace)
+
+    def on_disconnect(self):
+        global sockets
+        print('Logger client disconnected:', sockets['executor']['id']);
+        sockets['executor']['id'] = None
+
+
 socketio.on_namespace(AvidaClient('/avida'))
 socketio.on_namespace(MessagesClient('/messages'))
 socketio.on_namespace(ExternalCommandClient('/command'))
 socketio.on_namespace(LoggerClient('/logger'));
-
+socketio.on_namespace(ExecutorClient('/executor'));
 
 
 if __name__ == '__main__':

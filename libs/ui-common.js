@@ -52,7 +52,8 @@ define(
     return {
       setupHeader:setupHeader,
       avidaOnline:avidaOnline,
-      socketOnline:socketOnline
+      socketOnline:socketOnline,
+      setAvailability:setAvailability
     };
 
   }

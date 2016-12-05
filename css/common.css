@@ -47,7 +47,7 @@ body {
 
 #title {
   display:flex;
-  flex: 3 1 70%;
+  flex: 3 1 65%;
   order:2;
   font-size:18pt;
   font-weight:bolder;
@@ -59,7 +59,7 @@ body {
 #status {
   display:flex;
   flex-direction:column;
-  flex: 1 1 25%;
+  flex: 1 1 30%;
   order:3;
   align-self:center;
   font-size:10pt;
