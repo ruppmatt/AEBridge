@@ -21,8 +21,23 @@ define(
         ui.setAvailability('status_worker', 'Avida core worker not available', 'unavailable', 'available');
       }
     }
+
+    function getMenuItems(){
+      return [
+        {
+          name:'Restart Worker',
+          events:{}
+        },
+        {
+          name:'Halt Worker',
+          events:{}
+        }
+      ]
+    }
+
     return {
       updateHeader:updateHeader,
-      workerOnline:workerOnline
+      workerOnline:workerOnline,
+      getMenuItems:getMenuItems
     };
 });

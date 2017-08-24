@@ -4,17 +4,43 @@ define(
     'dojo/dom',
     'dojo/dom-class',
     'dojo/dom-construct',
-    'dojo/_base/window'
-  ], function (dom, domClass, domConstruct, win) {
+    'dojo/_base/window',
+    'dojo/_base/lang',
+    'dojo/on',
+    'dojo/mouse'
+  ], function (dom, domClass, domConstruct, win, lang, on, mouse) {
 
-    function setupHeader(title){
+    function setupHeader(title, menu_items){
       var body = win.body();
-      var header = domConstruct.create('div', {id:'header'}, body);
-      var hflex = domConstruct.create('div', {id:'header-flex'}, header);
-      domConstruct.create('div', {id:'menu'}, hflex);
+      var header = domConstruct.create('header', {id:'header'}, body);
+      var hflex = domConstruct.create('nav', {id:'header-flex'}, header);
+      domConstruct.create('div', {id:'menu', class:'menu'}, hflex);
       domConstruct.create('div', {id:'title',innerHTML:title}, hflex);
       domConstruct.create('div', {id:'status'}, hflex);
       setupSocketAvidaStatus();
+    }
+
+    function findMenuItemByName(name, items)
+    {
+      for (let item of items){
+        if (item['name'] === name){
+          return item;
+        }
+      }
+      return null;
+    }
+
+    function setupDropdownMenu(id, menu_items){
+      var menu = dom.byId(id);
+      on(menu, 'click', lang.hitch(this, mouseClickHighlight, menu));
+      var menu_dropdown = domConstruct.create('div', {class:'menu-dropdown'}, menu);
+      var menu_dropdown_content = domConstruct.create('div', {class:'menu-dropdown-content'}, menu);
+      for (let item of menu_items){
+        if (item['name'] !== undefined){
+          var menu_item = domConstruct.create('div', {class:'menu-item'}, menu_dropdown_content);
+          menu_item.innerHTML = item['name'];
+        }
+      }
     }
 
     function setupSocketAvidaStatus(){
@@ -44,16 +70,33 @@ define(
     }
 
     function setAvailability(id, text, new_state, old_state){
-      console.log(text);
       dom.byId(id).innerHTML = text;
       domClass.replace(id, new_state, old_state);
+    }
+
+    function mouseOverHighlight(item){
+      if (domClass.contains(item, 'mouse-highlight-onover')){
+        domClass.remove(item, 'mouse-highlight-onover');
+      } else {
+        domClass.add(item, 'mouse-highlight-onover');
+      }
+    }
+
+    function mouseClickHighlight(item){
+      if (domClass.contains(item, 'mouse-highlight-click')){
+        domClass.remove(item, 'mouse-highlight-click');
+      } else {
+        domClass.add(item, 'mouse-highlight-click');
+      }
     }
 
     return {
       setupHeader:setupHeader,
       avidaOnline:avidaOnline,
       socketOnline:socketOnline,
-      setAvailability:setAvailability
+      setAvailability:setAvailability,
+      findMenuItemByName:findMenuItemByName,
+      setupDropdownMenu:setupDropdownMenu
     };
 
   }

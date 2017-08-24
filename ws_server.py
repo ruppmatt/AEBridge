@@ -19,7 +19,7 @@ socketio = SocketIO(app)
 
 sockets = {};
 
-r_server = redis.StrictRedis('localhost')
+r_server = redis.StrictRedis(host='localhost', port='5060')
 
 
 def SetupSocketInfo():

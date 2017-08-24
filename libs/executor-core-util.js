@@ -22,6 +22,11 @@ define(
       }
     }
 
+    function restartAvidaCore(){
+      terminateAvidaCore();
+      restartAvidaCore();
+    }
+
     function sendCoreMessage(msg){
       if (core_worker){
         core_worker.post(msg);
