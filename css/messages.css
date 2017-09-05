@@ -57,5 +57,9 @@
 }
 
 .msg.av_debug {
-   color: var(--main-yellow);
+   color: var(--main-orange);
+}
+
+.msg.update{
+  border-top:solid #000000;
 }

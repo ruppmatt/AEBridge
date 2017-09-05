@@ -12,6 +12,30 @@ Introduction
 `Avida-ED Web <https://avida-ed.beacon-center.org>`_ is the education version of the digital life research platform Avida.  This software package enables a user to monitor the communication between the webpage user interface and the Avida web worker by using `SocketIO <http://http://socket.io/>`_ duplex communication.  
 
 
+Usage
+=====
+
+This package requires Python 3.  The required Python packages are stored in the requirements.txt and may
+be installed using pip.  It is strongly recommended that a Python virtual environment is used with this
+project.
+
+
+Setting up a Python virtual environment
+---------------------------------------
+
+
+Install redis
+-------------
+
+
+Starting the server
+-------------------
+To start the server:
+  + Start redis on port 5060
+  + Load the python virtual environment
+  + Run ws_server.py
+
+
 
 Features
 ========

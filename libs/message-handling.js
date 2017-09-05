@@ -78,7 +78,7 @@ define(
        var is_data = (meta._from === 'internal') ? '' : 'is_data';
        var update = (meta._tx_update !== undefined) ? meta._tx_update : (new Intl.DateTimeFormat('en-US', datetime_opts)).format(new Date())
        var msg_io_type = (meta._io_type !== undefined) ? meta._io_type : '-';
-
+       var update_class = (msg_type == 'update') ? 'update' : '';
 
        // Provide icons for IN or OUT messages
        switch (msg_io_type.toLowerCase()) {
@@ -122,7 +122,7 @@ define(
 
        // Message Entry Container
        var root_div = domConstruct.create('div', {
-          class: 'msg ' + is_data + ' ' + msg_from
+          class: 'msg ' + is_data + ' ' + msg_from + ' ' + update_class
        });
        var num_div = domConstruct.create('div', {
           class: 'ndx'
